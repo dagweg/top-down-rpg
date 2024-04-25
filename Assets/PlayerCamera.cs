@@ -7,8 +7,9 @@ public class PlayerCamera : MonoBehaviour
 {
     [SerializeField] float cameraSpeed = 100f;
     [SerializeField] Vector2 screenBounding = new(7f,7f);
-    [SerializeField] float zoomSpeed = 100f;
-    [SerializeField] float cameraZoomOutDistance = 10f;
+    [SerializeField] float zoomSpeed = 500f;
+    [SerializeField] float zoomOutDistance = 1000f;
+    [SerializeField] float zoomInDistance = 500f;
 
     float horizontal = 0f; 
     float vertical = 0f;
@@ -89,17 +90,30 @@ public class PlayerCamera : MonoBehaviour
     }
 
     void HandleZoomCameraMovement(){
+        Vector3 zoomDirection = (centerWPos - transform.position).normalized * zoomSpeed * Time.deltaTime;
+        
         if(Input.GetKey(KeyCode.Equals)){
             // Zoom In
+            move -= zoomDirection;
 
         }else if (Input.GetKey(KeyCode.Minus)){
             // Zoom Out
+            move += zoomDirection;
         }
+
+        float zoomMin = cameraStartPosition.y - zoomInDistance;
+        float zoomMax = cameraStartPosition.y + zoomOutDistance;
+        float clampedY = Mathf.Clamp(transform.position.y,zoomMin,zoomMax);
+
+        transform.position = new Vector3(transform.position.x,clampedY,transform.position.z);
+
+        Debug.Log("Zoom" + zoomDirection);
     }
 
     
     bool MouseCanMoveCamera(){
-        //!(mousePosition.y > screenBounding.y || mousePosition.y < 0 || mousePosition.x >screenBounding.x || mousePosition.x < 0) &&
+        if (mousePosition.x < 0 || mousePosition.y < 0 || mousePosition.x > screen.x || mousePosition.y > screen.y) return false;
+
         return  mousePosition.y <= screenBounding.y ||   
                 mousePosition.y >= screen.y - screenBounding.y || 
                 mousePosition.x <= screenBounding.x || 

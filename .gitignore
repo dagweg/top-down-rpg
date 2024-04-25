@@ -14,6 +14,8 @@
 # They also could contain extremely sensitive data
 /[Mm]emoryCaptures/
 
+/Assets/TextMesh Pro/
+
 # Recordings can get excessive in size
 /[Rr]ecordings/
 
@@ -70,3 +72,4 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+
