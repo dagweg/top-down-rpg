@@ -7,7 +7,8 @@ public class GameManager : MonoBehaviour
     public Texture2D cursorTexture;
     public Vector2 hotspot = Vector2.zero;
 
-    public int scale = 1;
+    public Vector2 cursorDimension;
+
     void Start()
     {
         if(cursorTexture)
@@ -16,7 +17,7 @@ public class GameManager : MonoBehaviour
 
     void Update(){
         int maxCurDim = Mathf.Max(cursorTexture.width,cursorTexture.height);
-        cursorTexture.width /= maxCurDim * scale;
-        cursorTexture.height /= maxCurDim * scale;
+        // cursorTexture.width = cursorDimension;
+        // cursorTexture.height = cursorDimension;
     }
 }
