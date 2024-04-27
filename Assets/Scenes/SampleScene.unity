@@ -841,8 +841,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   cameraSpeed: 1000
-  screenBounding: {x: 50, y: 50}
-  zoomSpeed: 500
+  screenSafeZone: {x: 7, y: 7}
+  zoomSpeed: 1000
+  rotateSpeed: 500
   zoomOutDistance: 420
   zoomInDistance: 260
 --- !u!1 &410087039
@@ -4675,7 +4676,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   cursorTexture: {fileID: 0}
   hotspot: {x: 0, y: 0}
-  scale: 1
+  cursorDimension: {x: 0, y: 0}
 --- !u!4 &1997387217
 Transform:
   m_ObjectHideFlags: 0
