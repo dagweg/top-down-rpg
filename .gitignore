@@ -17,6 +17,8 @@
 /Assets/Scenes/SampleScene/*.exr
 
 /Assets/TextMesh Pro/
+/.vscode
+/.idea
 
 # Recordings can get excessive in size
 /[Rr]ecordings/
