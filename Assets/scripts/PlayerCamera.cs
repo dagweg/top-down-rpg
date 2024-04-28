@@ -1,29 +1,40 @@
 using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
+using UnityEditor.UIElements;
 using UnityEngine;
 
 public class PlayerCamera : MonoBehaviour
 {
-    [SerializeField] float cameraSpeed = 100f;
-    [SerializeField] Vector2 screenSafeZone = new(7f,7f);
-    [SerializeField] float zoomSpeed = 500f;
-    [SerializeField] float rotateSpeed = 500f;
-    [SerializeField] float zoomOutDistance = 1000f;
-    [SerializeField] float zoomInDistance = 500f;
+    public float cameraSpeed = 100f;
+    public Vector2 screenSafeZone = new(7f,7f);
+    public float zoomSpeed = 500f;
+    public float rotateSpeed = 500f;
+    public float zoomOutDistance = 1000f;
+    public float zoomInDistance = 500f;
+        
+    [HideInInspector]
+    public float horizontal = 0f; 
+    [HideInInspector]
+    public float vertical = 0f;
+    [HideInInspector]
+    public float mouseX = 0f;
+    [HideInInspector]
+    public float mouseY = 0f;
+    [HideInInspector]
+    public float accumulatedScroll = 0f; 
 
-    float horizontal = 0f; 
-    float vertical = 0f;
-    float mouseX = 0f;
-    float mouseY = 0f;
-    float accumulatedScroll = 0f; 
+    [HideInInspector]
+    public Vector2 screen;
+    [HideInInspector]
+    public Camera mainCamera;
 
-    Vector2 screen;
-    Camera mainCamera;
-
-    Vector3 move = Vector3.zero;
-    // Vector3 cameraMidPoint = Vector3.zero;
-    Vector3 cameraInitialPosition = Vector3.zero; 
+    [HideInInspector]
+    public Vector3 move = Vector3.zero;
+    [HideInInspector]
+    public Vector3 cameraInitialPosition = Vector3.zero; 
+    [HideInInspector]
+    public bool isRotating = false;
     void Start()
     {
         mainCamera = Camera.main;
@@ -39,7 +50,6 @@ public class PlayerCamera : MonoBehaviour
 
         HandleCameraMovement();
         
-        Debug.Log("Forward: " + Vector3.forward);
     }
 
     void HandleCameraMovement(){
@@ -47,11 +57,13 @@ public class PlayerCamera : MonoBehaviour
         // The Vector that Determines which Direction the Camera Will Go.
         move = Vector3.zero;
         
-        if(MouseCanMoveCamera()){
-            HandleMouseCameraMovement();
-        }
-        else{
-            HandleKeyboardCameraMovement();
+        if(!isRotating){
+            if(MouseCanMoveCamera()){
+                HandleMouseCameraMovement();
+            }
+            else{
+                HandleKeyboardCameraMovement();
+            }
         }
 
         HandleZoomCameraMovement();
@@ -70,32 +82,32 @@ public class PlayerCamera : MonoBehaviour
         mouseY = Input.GetAxis("Mouse Y");       
     }
 
-    Vector2 GetScreenDimension(){
+    public Vector2 GetScreenDimension(){
         return new (Screen.width,Screen.height); // Calculate Everytime Incase Of Resize
     }
 
-    Vector3 GetCameraWorldPosition(){
+    public Vector3 GetCameraWorldPosition(){
         // Get Camera MidPoint
-        Vector3 cameraMidPoint = GetCameraMidPoint();
+        Vector3 cameraMidPoint = GetCameraViewPortMidPoint();
         
         // Get the Camera World Space Positions
         return mainCamera.ViewportToWorldPoint(cameraMidPoint);
     }
 
-    Vector3 GetCameraMidPoint(){
+    public Vector3 GetCameraViewPortMidPoint(){
         return new (0.5f,0.5f,mainCamera.nearClipPlane);
     }
 
-    Vector3 GetMouseScreenPosition(){
+    public Vector3 GetMouseScreenPosition(){
         return new(Input.mousePosition.x,Input.mousePosition.y,mainCamera.nearClipPlane);
     }
 
-    Vector3 GetMouseWorldPosition(){
+    public Vector3 GetMouseWorldPosition(){
         Vector3 mouseScreenPosition = new(Input.mousePosition.x,Input.mousePosition.y,mainCamera.nearClipPlane);
         return mainCamera.ScreenToWorldPoint(mouseScreenPosition);
     }
 
-    Vector3 GetCameraDirectionToMouse(){
+    public Vector3 GetCameraDirectionToMouse(){
         Vector3 cameraCenterWorldPosition = GetCameraWorldPosition();
         Vector3 mouseWorldPosition = GetMouseWorldPosition();
         cameraCenterWorldPosition.y = transform.position.y; // Clamp the Y component so that it doesn't move when mouse moves
@@ -106,12 +118,48 @@ public class PlayerCamera : MonoBehaviour
         return dir;
     }
 
-    Vector3 GetCameraDirectionTowardsCenter(){
+    public Vector3 GetCameraDirectionTowardsCenter(){
         Vector3 camWPos = GetCameraWorldPosition();
         camWPos.y = transform.position.y;
         Vector3 dir = (transform.position-GetCameraWorldPosition()).normalized;
         dir.y = 0;
         return dir;
+    }
+
+    public Vector3? GetMouseToGroundPosition(LayerMask layerMask = default)
+    {
+        if(layerMask == default){
+            layerMask = LayerMask.GetMask("Ground");
+        }
+        
+        Ray ray = mainCamera.ScreenPointToRay(GetMouseScreenPosition());
+
+        RaycastHit hit;
+        if (Physics.Raycast(ray, out hit, 10000f, layerMask))
+        {
+            Debug.Log("Ray has hit : " + hit.transform.position);
+            return hit.point;
+        }
+        else
+        {
+            Debug.Log("Ray didn't hit any ground!");
+        }
+
+        return null;
+    }
+
+    public Vector3? GetCameraToGroundPosition(LayerMask layerMask = default){
+        if(layerMask == default){
+            layerMask = LayerMask.GetMask("Ground");
+        }
+        Ray ray = mainCamera.ViewportPointToRay(GetCameraViewPortMidPoint());
+        RaycastHit hit;
+        if(Physics.Raycast(ray, out hit, 10000f, layerMask)){
+            return hit.point;
+        }else{
+            Debug.Log("Ray didn't hit any ground!");
+        }
+        return null;
     }
 
     void HandleMouseCameraMovement(){
@@ -151,13 +199,16 @@ public class PlayerCamera : MonoBehaviour
 
     void HandleRotateCameraMovement(){
         float rotationMagnitude = mouseX * Time.deltaTime * rotateSpeed;
-        Vector3 cameraWorldPosition = GetCameraWorldPosition();
-        if(Input.GetKey(KeyCode.R)){
-            transform.RotateAround(cameraWorldPosition, Vector3.up, rotationMagnitude);
+        Vector3? rotationPoint = GetCameraToGroundPosition();
+        if(Input.GetKey(KeyCode.R) && rotationPoint != null){
+            isRotating = true;
+            transform.RotateAround((Vector3)rotationPoint, Vector3.up, rotationMagnitude);
+        }else{
+            isRotating = false;
         }
     }
     
-    bool MouseCanMoveCamera(){
+    public bool MouseCanMoveCamera(){
         Vector3 mouseSPos = GetMouseScreenPosition();
         if (mouseSPos.x < 0 || mouseSPos.y < 0 || mouseSPos.x > screen.x || mouseSPos.y > screen.y) return false;
 
